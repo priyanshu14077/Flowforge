@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env.local
+.env.production
+dist/
+.next/
+.vercel/
+.DS_Store
+*.pem
+*.key
