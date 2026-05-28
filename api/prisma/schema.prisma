@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  workflows Workflow[]
+}
+
+model Workflow {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  description  String?
+  definition   Json
+  webhookPath  String        @unique @default(cuid())
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  runs         WorkflowRun[]
+}
+
+model WorkflowRun {
+  id          String           @id @default(cuid())
+  workflowId  String
+  workflow    Workflow         @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  status      WorkflowRunStatus @default(PENDING)
+  triggeredBy TriggerType
+  startedAt   DateTime         @default(now())
+  completedAt DateTime?
+  error       String?
+  nodeRuns    NodeExecution[]
+}
+
+model NodeExecution {
+  id              String    @id @default(cuid())
+  workflowRunId  String
+  workflowRun    WorkflowRun @relation(fields: [workflowRunId], references: [id], onDelete: Cascade)
+  nodeId         String
+  nodeType       String
+  input          Json?
+  output         Json?
+  error          String?
+  startedAt      DateTime  @default(now())
+  completedAt    DateTime?
+}
+
+enum WorkflowRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum TriggerType {
+  MANUAL
+  WEBHOOK
+  SCHEDULE
+}
