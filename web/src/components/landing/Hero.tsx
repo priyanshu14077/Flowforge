@@ -12,6 +12,7 @@ gsap.registerPlugin(ScrollTrigger, useGSAP)
 const AuroraBackground = dynamic(() => import('./AuroraBackground'), { ssr: false })
 const ParticleField = dynamic(() => import('./ParticleField'), { ssr: false })
 const BeamsBackground = dynamic(() => import('./BeamsBackground'), { ssr: false })
+const WavesBackground = dynamic(() => import('./WavesBackground'), { ssr: false })
 
 // Node positions for the workflow canvas
 const NODES = [
@@ -130,6 +131,7 @@ export default function Hero() {
       <AuroraBackground />
       <ParticleField />
       <BeamsBackground />
+      <WavesBackground />
 
       {/* Dot grid overlay */}
       <div className="absolute inset-0 dot-grid pointer-events-none z-10" />
