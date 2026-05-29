@@ -1,402 +1,410 @@
 'use client'
 
-import { useRef } from 'react'
-import dynamic from 'next/dynamic'
+import { useRef, useEffect } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { useGSAP } from '@gsap/react'
-import { Zap, Globe, Webhook, Activity } from 'lucide-react'
+import styles from './Hero.module.css'
 
-gsap.registerPlugin(ScrollTrigger, useGSAP)
+// Font variables — defined as CSS custom properties on the root
+const FONT_BRICOLAGE = "'Bricolage Grotesque', sans-serif"
+const FONT_SYNE = "'Syne', sans-serif"
+const FONT_DM_SANS = "'DM Sans', sans-serif"
 
-const AuroraBackground = dynamic(() => import('./AuroraBackground'), { ssr: false })
-const ParticleField = dynamic(() => import('./ParticleField'), { ssr: false })
-const BeamsBackground = dynamic(() => import('./BeamsBackground'), { ssr: false })
-const WavesBackground = dynamic(() => import('./WavesBackground'), { ssr: false })
+const ACCENT_PRIMARY = '#6B6CF9'
+const ACCENT_SECONDARY = '#3AC8A4'
 
-// Node positions for the workflow canvas
-const NODES = [
-  { id: 'wh', label: 'Webhook', type: 'webhook', x: 80, y: 100, color: '#475569', bg: '#1E293B' },
-  { id: 'llm', label: 'LLM', type: 'llm', x: 240, y: 180, color: '#A78BFA', bg: '#2E1065' },
-  { id: 'cond', label: 'Condition', type: 'condition', x: 400, y: 100, color: '#F59E0B', bg: '#451a03' },
-  { id: 'http', label: 'HTTP', type: 'http', x: 560, y: 180, color: '#22D3EE', bg: '#083344' },
+const STATS = [
+  { value: '340ms', label: 'Avg latency' },
+  { value: '10k', label: 'Runs free/mo' },
+  { value: '99.9%', label: 'Uptime SLA' },
 ]
 
-const STATUS_LABELS: Record<string, string> = {
-  webhook: 'Received',
-  llm: 'Classifying...',
-  condition: 'urgent: true',
-  http: 'POST api.slack.com',
+interface HeroProps {
+  backgroundImage?: string
+  children?: React.ReactNode
 }
 
-// 4 core feature cards for scrollable section
-const CORE_FEATURES = [
-  {
-    icon: Zap,
-    color: '#A78BFA',
-    bg: '#2E1065',
-    title: 'LLM-Powered Decisions',
-    description: 'Groq-powered LLM nodes classify, summarize, and route data instantly. No ML expertise required.',
-    metric: '340ms avg latency',
-  },
-  {
-    icon: Globe,
-    color: '#22D3EE',
-    bg: '#083344',
-    title: 'HTTP & API Integration',
-    description: 'Connect any REST API. Interpolate {{context}} variables, handle auth, and transform responses.',
-    metric: 'OAuth, Bearer, API Keys',
-  },
-  {
-    icon: Webhook,
-    color: '#F59E0B',
-    bg: '#451a03',
-    title: 'Instant Webhooks',
-    description: 'Every workflow gets a live webhook URL. Trigger from any service — Slack, Stripe, GitHub.',
-    metric: '<50ms trigger time',
-  },
-  {
-    icon: Activity,
-    color: '#10B981',
-    bg: '#022c22',
-    title: 'Real-time Observability',
-    description: 'Watch every node execute step-by-step. See inputs, outputs, and errors as they happen.',
-    metric: '100% execution tracing',
-  },
-]
-
-export default function Hero() {
+export default function Hero({ backgroundImage, children }: HeroProps) {
   const sectionRef = useRef<HTMLElement>(null)
+  const bgRef = useRef<HTMLDivElement>(null)
+  const badgeRef = useRef<HTMLSpanElement>(null)
   const headlineRef = useRef<HTMLHeadingElement>(null)
-  const sublineRef = useRef<HTMLParagraphElement>(null)
-  const ctasRef = useRef<HTMLDivElement>(null)
-  const canvasRef = useRef<HTMLDivElement>(null)
-  const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map())
-  const featuresRef = useRef<HTMLDivElement>(null)
+  const subheadingRef = useRef<HTMLParagraphElement>(null)
+  const ctaRowRef = useRef<HTMLDivElement>(null)
+  const statsRef = useRef<HTMLDivElement>(null)
+  const shapesRef = useRef<HTMLDivElement>(null)
+  const overlayRef = useRef<HTMLDivElement>(null)
 
-  useGSAP(() => {
-    // Entrance animation
-    const tl = gsap.timeline()
+  useEffect(() => {
+    // Reduced motion check
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return
+    }
 
-    tl.from(headlineRef.current, {
-      y: 60,
-      opacity: 0,
-      duration: 1,
-      ease: 'power3.out',
-    })
-    .from(sublineRef.current, {
-      y: 40,
-      opacity: 0,
-      duration: 0.8,
-      ease: 'power3.out',
-    }, '-=0.6')
-    .from(ctasRef.current, {
-      y: 30,
-      opacity: 0,
-      duration: 0.6,
-      ease: 'power3.out',
-    }, '-=0.4')
+    gsap.registerPlugin(ScrollTrigger)
 
-    // Node firing sequence - 2s each
-    const canvasTl = gsap.timeline()
+    const tl = gsap.timeline({ defaults: { ease: 'power2.out' } })
 
-    NODES.forEach((node, i) => {
-      const el = nodeRefs.current.get(node.id)
-      if (!el) return
+    // Badge — fade and slide up
+    if (badgeRef.current) {
+      tl.fromTo(badgeRef.current,
+        { y: 20, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.6 }
+      )
+    }
 
-      canvasTl.to(el, {
-        scale: 1.05,
-        boxShadow: `0 0 30px ${node.color}`,
-        borderColor: node.color,
-        duration: 0.4,
-        ease: 'power2.out',
-      }, i * 2)
-      .to(el.querySelector('.node-status'), {
-        opacity: 1,
-        duration: 0.2,
-      }, i * 2)
-      .to(el.querySelector('.check-overlay'), {
-        scale: 1,
-        opacity: 1,
-        duration: 0.3,
-        ease: 'back.out(2)',
-      }, i * 2 + 0.6)
-      .to(el, {
-        scale: 1,
-        boxShadow: 'none',
-        borderColor: '#1E293B',
-        duration: 0.3,
-      }, i * 2 + 1.4)
-    })
+    // Headline — fade and slide up
+    if (headlineRef.current) {
+      tl.fromTo(headlineRef.current,
+        { y: 40, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.9 },
+        '-=0.4'
+      )
+    }
 
-    // 10s loop
-    canvasTl.repeat(-1)
+    // Subheading — slide up
+    if (subheadingRef.current) {
+      tl.fromTo(subheadingRef.current,
+        { y: 30, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.7 },
+        '-=0.5'
+      )
+    }
 
-    // Subtle parallax on scroll - keep text visible
-    gsap.to(canvasRef.current, {
-      y: -50,
-      ease: 'none',
-      scrollTrigger: {
-        trigger: sectionRef.current,
-        start: 'top top',
-        end: 'bottom top',
-        scrub: 2,
-      },
-    })
+    // CTA buttons — scale in with stagger
+    if (ctaRowRef.current) {
+      const ctas = ctaRowRef.current.querySelectorAll('a')
+      tl.fromTo(ctaRowRef.current,
+        { scale: 0.92, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.6 },
+        '-=0.3'
+      )
+      if (ctas.length > 0) {
+        tl.fromTo(ctas[0],
+          { scale: 0.92, opacity: 0 },
+          { scale: 1, opacity: 1, duration: 0.5 },
+          '-=0.3'
+        )
+      }
+      if (ctas.length > 1) {
+        tl.fromTo(ctas[1],
+          { scale: 0.92, opacity: 0 },
+          { scale: 1, opacity: 1, duration: 0.5 },
+          '-=0.4'
+        )
+      }
+    }
 
-    // Horizontal scroll for features
-    const featureCards = featuresRef.current?.querySelectorAll('.feature-card')
-    if (featureCards && featureCards.length > 0) {
-      gsap.to(featureCards, {
-        x: -(featuresRef.current!.scrollWidth - window.innerWidth + 100),
+    // Stats strip — fade in
+    if (statsRef.current) {
+      tl.fromTo(statsRef.current,
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.6 },
+        '-=0.2'
+      )
+
+      // Counter tween for numeric stats
+      const statValues = statsRef.current.querySelectorAll('[data-count]')
+      statValues.forEach((el) => {
+        const target = el.getAttribute('data-count')
+        if (target) {
+          const numericTarget = parseFloat(target)
+          if (!isNaN(numericTarget)) {
+            const obj = { val: 0 }
+            tl.to(obj, {
+              val: numericTarget,
+              duration: 1.2,
+              ease: 'power2.out',
+              onUpdate: () => {
+                el.textContent = obj.val % 1 === 0 ? Math.round(obj.val).toString() : obj.val.toFixed(1)
+              },
+            }, '-=0.6')
+          }
+        }
+      })
+    }
+
+    // Decorative shapes — draw in via strokeDashoffset
+    if (shapesRef.current) {
+      const shapes = shapesRef.current.querySelectorAll('[data-path]')
+      shapes.forEach((shape) => {
+        const pathEl = shape as SVGGeometryElement
+        const length = pathEl.getTotalLength?.() || 100
+        gsap.set(shape, {
+          strokeDasharray: length,
+          strokeDashoffset: length,
+        })
+        tl.to(shape, {
+          strokeDashoffset: 0,
+          duration: 1.2,
+          ease: 'power2.out',
+        }, 0.2)
+      })
+    }
+
+    // Scroll parallax for background
+    if (bgRef.current) {
+      gsap.to(bgRef.current, {
+        y: '30%',
         ease: 'none',
         scrollTrigger: {
-          trigger: featuresRef.current,
+          trigger: sectionRef.current,
           start: 'top top',
-          end: () => `+=${featuresRef.current!.scrollWidth}`,
-          scrub: 1,
-          pin: true,
-          anticipatePin: 1,
+          end: 'bottom top',
+          scrub: true,
         },
       })
     }
+
+    // Scroll parallax for decorative shapes — different speeds
+    if (shapesRef.current) {
+      const shapes = shapesRef.current.querySelectorAll('[data-speed]')
+      shapes.forEach((shape) => {
+        const speed = parseFloat(shape.getAttribute('data-speed') || '0.15')
+        gsap.to(shape, {
+          y: `${speed * -150}px`,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top top',
+            end: 'bottom top',
+            scrub: true,
+          },
+        })
+      })
+    }
+
+    // Remove will-change after animations complete
+    tl.eventCallback('onComplete', () => {
+      const animated = sectionRef.current?.querySelectorAll('[style*="will-change"]')
+      animated?.forEach((el) => {
+        ;(el as HTMLElement).style.willChange = 'auto'
+      })
+    })
 
     return () => {
       ScrollTrigger.getAll().forEach(t => t.kill())
     }
   }, [])
 
+  // Magnetic hover on primary CTA
+  useEffect(() => {
+    const primaryBtn = document.querySelector('[data-magnetic]') as HTMLElement
+    if (!primaryBtn) return
+
+    const magneticArea = primaryBtn.closest('[data-magnetic-area]') as HTMLElement
+    if (!magneticArea) return
+
+    const quickX = gsap.quickTo(primaryBtn, 'x', { duration: 0.3, ease: 'power2.out' })
+    const quickY = gsap.quickTo(primaryBtn, 'y', { duration: 0.3, ease: 'power2.out' })
+    const radius = 100
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = magneticArea.getBoundingClientRect()
+      const centerX = rect.left + rect.width / 2
+      const centerY = rect.top + rect.height / 2
+      const distX = e.clientX - centerX
+      const distY = e.clientY - centerY
+      const dist = Math.sqrt(distX * distX + distY * distY)
+
+      if (dist < radius) {
+        const factor = 1 - dist / radius
+        quickX(distX * factor * 0.06)
+        quickY(distY * factor * 0.06)
+      } else {
+        quickX(0)
+        quickY(0)
+      }
+    }
+
+    const handleMouseLeave = () => {
+      quickX(0)
+      quickY(0)
+    }
+
+    magneticArea.addEventListener('mousemove', handleMouseMove)
+    magneticArea.addEventListener('mouseleave', handleMouseLeave)
+
+    return () => {
+      magneticArea.removeEventListener('mousemove', handleMouseMove)
+      magneticArea.removeEventListener('mouseleave', handleMouseLeave)
+    }
+  }, [])
+
+  // Mouse-following subtle radial glow on overlay
+  useEffect(() => {
+    const overlay = overlayRef.current
+    if (!overlay) return
+
+    let rafId: number
+    let targetX = 0.5
+    let targetY = 0.5
+    let currentX = 0.5
+    let currentY = 0.5
+
+    const handleMouseMove = (e: MouseEvent) => {
+      targetX = e.clientX / window.innerWidth
+      targetY = e.clientY / window.innerHeight
+    }
+
+    const animate = () => {
+      currentX += (targetX - currentX) * 0.05
+      currentY += (targetY - currentY) * 0.05
+      overlay.style.background = `
+        radial-gradient(
+          600px circle at ${currentX * 100}% ${currentY * 100}%,
+          rgba(107, 108, 249, 0.06) 0%,
+          transparent 60%
+        ),
+        linear-gradient(
+          135deg,
+          rgba(7, 10, 18, 0.92) 0%,
+          rgba(7, 10, 18, 0.70) 40%,
+          rgba(7, 10, 18, 0.75) 100%
+        )
+      `
+      rafId = requestAnimationFrame(animate)
+    }
+
+    window.addEventListener('mousemove', handleMouseMove, { passive: true })
+    rafId = requestAnimationFrame(animate)
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      cancelAnimationFrame(rafId)
+    }
+  }, [])
+
   return (
-    <section ref={sectionRef} className="relative overflow-hidden">
-      {/* Layered animated backgrounds */}
-      <AuroraBackground />
-      <ParticleField />
-      <BeamsBackground />
-      <WavesBackground />
+    <section
+      ref={sectionRef}
+      className={styles.hero}
+      aria-label="Hero"
+    >
+      {/* Background image */}
+      <div
+        ref={bgRef}
+        className={styles.background}
+        role="img"
+        aria-label="Abstract dark topographic aerial view — fluid dynamics"
+        style={{
+          backgroundImage: backgroundImage
+            ? `url(${backgroundImage})`
+            : 'url(https://images.unsplash.com/photo-1509909756405-be0194f68a3e?w=1920&q=85)',
+          willChange: 'transform',
+        }}
+      />
 
-      {/* Dot grid overlay */}
-      <div className="absolute inset-0 dot-grid pointer-events-none z-10" />
+      {/* Overlay with mouse-following glow */}
+      <div ref={overlayRef} className={styles.overlay} />
 
-      {/* Radial glow */}
-      <div className="absolute inset-0 radial-glow pointer-events-none z-10" />
+      {/* Content */}
+      <div className={styles.content}>
+        {/* Eyebrow badge */}
+        <span ref={badgeRef} className={styles.badge}>
+          <span className={styles.badgeDot} />
+          AI Workflow Builder
+        </span>
 
-      {/* Hero Content */}
-      <div className="relative z-20 max-w-7xl mx-auto px-6 py-32 grid grid-cols-2 gap-16 items-center min-h-screen">
-        {/* Left: Copy */}
-        <div className="space-y-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-indigo-500/30 bg-indigo-500/10">
-            <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
-            <span className="text-indigo-400 text-sm font-medium tracking-widest uppercase">
-              AI Workflow Builder
-            </span>
-          </div>
+        {/* Headline */}
+        <h1 ref={headlineRef} className={styles.headline}>
+          <span className={styles.headlineLine}>Build automations</span>
+          <span className={styles.headlineLine}>
+            <span className={styles.accentWord}>visually.</span>
+          </span>
+        </h1>
 
-          <h1
-            ref={headlineRef}
-            className="text-7xl font-bold text-white leading-[1.1] tracking-tight"
-          >
-            Build automations<br />
-            <span className="bg-gradient-to-r from-indigo-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
-              visually.
-            </span>
-          </h1>
+        {/* Subheading */}
+        <p ref={subheadingRef} className={styles.subheading}>
+          Connect LLMs, APIs, webhooks, and logic on one canvas.
+          No code required. Ship in minutes, not months.
+        </p>
 
-          <p
-            ref={sublineRef}
-            className="text-xl text-slate-400 leading-relaxed max-w-lg"
-          >
-            Connect LLMs, APIs, webhooks, and logic on one canvas.
-            No code. No compromise. Just flow.
-          </p>
-
-          <div ref={ctasRef} className="flex items-center gap-4">
+        {/* CTA row */}
+        <div ref={ctaRowRef} className={styles.ctaRow}>
+          <div data-magnetic-area className={styles.ctaMagneticArea}>
             <a
               href="/login"
-              className="group relative px-8 py-4 bg-indigo-600 text-white font-semibold rounded-xl overflow-hidden"
+              className={styles.ctaPrimary}
+              data-magnetic
+              aria-label="Start building for free"
             >
-              <span className="relative z-10">Start building — free</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            </a>
-            <a
-              href="#canvas-section"
-              className="px-8 py-4 border border-white/20 text-white font-medium rounded-xl hover:bg-white/5 hover:border-white/30 transition-all duration-300 backdrop-blur-sm"
-            >
-              See how it works
+              Start building — free
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </a>
           </div>
-
-          <div className="flex items-center gap-6 pt-4">
-            {['No code required', 'Free to start', '10k runs/mo free'].map((item) => (
-              <div key={item} className="flex items-center gap-2 text-slate-500 text-sm">
-                <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                {item}
-              </div>
-            ))}
-          </div>
-
-          {/* 4 core features inline */}
-          <div className="grid grid-cols-2 gap-4 pt-4">
-            {CORE_FEATURES.map((feature) => {
-              const Icon = feature.icon
-              return (
-                <div key={feature.title} className="flex items-start gap-3">
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: feature.bg, color: feature.color }}
-                  >
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-white text-sm font-semibold">{feature.title}</div>
-                    <div className="text-slate-500 text-xs mt-0.5">{feature.metric}</div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+          <a
+            href="#features"
+            className={styles.ctaSecondary}
+            aria-label="See how it works"
+          >
+            See how it works
+          </a>
         </div>
 
-        {/* Right: Animated workflow canvas */}
-        <div ref={canvasRef} className="relative">
-          <div className="relative w-full h-[380px] bg-[#0F172A]/80 backdrop-blur-xl rounded-3xl border border-white/10 p-6 overflow-hidden">
-            {/* Glass effect */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-3xl" />
-
-            {/* Header bar */}
-            <div className="flex items-center gap-3 mb-4 relative z-10">
-              <div className="flex gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-red-500/80" />
-                <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-                <div className="w-3 h-3 rounded-full bg-green-500/80" />
-              </div>
-              <div className="flex-1 mx-4">
-                <div className="bg-black/30 rounded-lg px-4 py-1.5 text-xs text-slate-400 font-mono text-center">
-                  Support Ticket Triage — Live Demo
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-xs text-emerald-400 font-medium">Running</span>
+        {/* Stats strip */}
+        <div ref={statsRef} className={styles.statsStrip}>
+          {STATS.map((stat, i) => (
+            <div key={i}>
+              {i > 0 && <div className={styles.statDivider} aria-hidden="true" />}
+              <div className={styles.stat}>
+                <span className={styles.statValue}>{stat.value}</span>
+                <span className={styles.statLabel}>{stat.label}</span>
               </div>
             </div>
-
-            {/* SVG edges */}
-            <svg className="absolute inset-0 pointer-events-none z-0" width="100%" height="100%">
-              <defs>
-                <filter id="glow-edge">
-                  <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-                  <feMerge>
-                    <feMergeNode in="coloredBlur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-
-              <defs>
-                <linearGradient id="grad-violet" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#475569" />
-                  <stop offset="100%" stopColor="#A78BFA" />
-                </linearGradient>
-                <linearGradient id="grad-amber" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#A78BFA" />
-                  <stop offset="100%" stopColor="#F59E0B" />
-                </linearGradient>
-                <linearGradient id="grad-cyan" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#F59E0B" />
-                  <stop offset="100%" stopColor="#22D3EE" />
-                </linearGradient>
-              </defs>
-
-              {/* Edge: Webhook → LLM */}
-              <path
-                d="M 160 140 C 160 240, 320 240, 320 220"
-                fill="none"
-                stroke="url(#grad-violet)"
-                strokeWidth="2"
-                filter="url(#glow-edge)"
-                className="animate-pulse"
-              />
-
-              {/* Edge: LLM → Condition */}
-              <path
-                d="M 320 220 C 320 240, 480 240, 480 140"
-                fill="none"
-                stroke="url(#grad-amber)"
-                strokeWidth="2"
-                filter="url(#glow-edge)"
-                className="animate-pulse"
-              />
-
-              {/* Edge: Condition → HTTP */}
-              <path
-                d="M 480 140 C 480 240, 640 240, 640 220"
-                fill="none"
-                stroke="url(#grad-cyan)"
-                strokeWidth="2"
-                filter="url(#glow-edge)"
-                className="animate-pulse"
-              />
-
-              {/* Animated dots traveling along edges */}
-              <circle r="4" fill="#A78BFA" filter="url(#glow-edge)">
-                <animateMotion dur="2s" repeatCount="indefinite" path="M 160 140 C 160 240, 320 240, 320 220" />
-              </circle>
-              <circle r="4" fill="#F59E0B" filter="url(#glow-edge)">
-                <animateMotion dur="2s" begin="0.6s" repeatCount="indefinite" path="M 320 220 C 320 240, 480 240, 480 140" />
-              </circle>
-              <circle r="4" fill="#22D3EE" filter="url(#glow-edge)">
-                <animateMotion dur="2s" begin="1.2s" repeatCount="indefinite" path="M 480 140 C 480 240, 640 240, 640 220" />
-              </circle>
-            </svg>
-
-            {/* Nodes */}
-            {NODES.map((node) => (
-              <div
-                key={node.id}
-                ref={(el) => { if (el) nodeRefs.current.set(node.id, el) }}
-                className="absolute flex flex-col items-center justify-center w-[130px] h-[70px] rounded-xl border border-white/10 backdrop-blur-sm transition-all duration-300"
-                style={{ left: node.x, top: node.y, background: node.bg }}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <div
-                    className="w-6 h-6 rounded-lg flex items-center justify-center text-xs"
-                    style={{ background: node.color + '30', color: node.color }}
-                  >
-                    {node.type.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="text-sm font-semibold text-white">{node.label}</span>
-                </div>
-                <span
-                  className="node-status text-[10px] opacity-0 transition-opacity"
-                  style={{ color: node.color }}
-                >
-                  {STATUS_LABELS[node.type]}
-                </span>
-                {/* Check overlay */}
-                <div className="check-overlay absolute -top-2 -right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center scale-0">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M2.5 6l2.5 2.5L9.5 4" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                </div>
-              </div>
-            ))}
-
-            {/* Bottom stats */}
-            <div className="absolute bottom-4 left-6 right-6 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-4">
-                <span className="text-slate-500">Nodes: <span className="text-white font-medium">4</span></span>
-                <span className="text-slate-500">Runs: <span className="text-white font-medium">12.4k</span></span>
-                <span className="text-slate-500">Avg: <span className="text-emerald-400 font-medium">340ms</span></span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-slate-400">All systems operational</span>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
+
+        {/* Optional floating canvas preview */}
+        {children}
+      </div>
+
+      {/* Decorative SVG shapes */}
+      <div ref={shapesRef} className={styles.decorativeShapes} aria-hidden="true">
+        {/* Diamond */}
+        <svg
+          data-path
+          data-speed="0.15"
+          className={styles.shape + ' ' + styles.shapeDiamond}
+          viewBox="0 0 60 60"
+        >
+          <rect x="15" y="15" width="30" height="30" />
+        </svg>
+
+        {/* Arc */}
+        <svg
+          data-path
+          data-speed="0.25"
+          className={styles.shape + ' ' + styles.shapeArc}
+          viewBox="0 0 200 100"
+        >
+          <path d="M 10 80 Q 100 0 190 80" />
+        </svg>
+
+        {/* Grid fragment */}
+        <svg
+          data-path
+          data-speed="0.15"
+          className={styles.shape + ' ' + styles.shapeGrid}
+          viewBox="0 0 80 80"
+        >
+          <line x1="0" y1="0" x2="80" y2="80" />
+          <line x1="80" y1="0" x2="0" y2="80" />
+          <line x1="40" y1="0" x2="40" y2="80" />
+          <line x1="0" y1="40" x2="80" y2="40" />
+        </svg>
+
+        {/* Horizontal line */}
+        <svg
+          data-path
+          data-speed="0.5"
+          className={styles.shape + ' ' + styles.shapeLine}
+          viewBox="0 0 120 1"
+        >
+          <line x1="0" y1="0.5" x2="120" y2="0.5" />
+        </svg>
       </div>
     </section>
   )

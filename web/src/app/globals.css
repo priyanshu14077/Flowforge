@@ -14,6 +14,11 @@
   --success: #10B981;
   --text-primary: #F8FAFC;
   --text-secondary: #94A3B8;
+
+  /* Font variables (set by next/font) */
+  --font-bricolage: 'Bricolage Grotesque', sans-serif;
+  --font-syne: 'Syne', sans-serif;
+  --font-dm-sans: 'DM Sans', sans-serif;
 }
 
 /* Dot grid background pattern */
