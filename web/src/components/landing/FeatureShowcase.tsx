@@ -5,67 +5,97 @@ import Image from 'next/image'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useGSAP } from '@gsap/react'
+import { Zap, Globe, Webhook, Activity } from 'lucide-react'
 
 gsap.registerPlugin(ScrollTrigger)
 
-// High-res free Unsplash images for each feature
-const FEATURE_IMAGES = [
+// Abstract high-res images from Unsplash
+const FEATURES = [
   {
-    src: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800&q=90',
-    alt: 'AI neural network visualization',
-    label: 'LLM-Powered',
-    sublabel: 'Groq inference in 340ms',
+    image: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=1400&q=90',
+    icon: Zap,
     color: '#A78BFA',
-    tag: 'Neural Networks',
+    bgColor: 'rgba(167, 139, 250, 0.1)',
+    label: 'LLM-Powered Intelligence',
+    description: 'Groq-powered LLM nodes classify, route, and transform data with 340ms latency. No ML expertise — just connect and flow.',
+    tag: 'Neural Processing',
+    accent: '#7C3AED',
   },
   {
-    src: 'https://images.unsplash.com/photo-1558494949-ef010a51f750?w=800&q=90',
-    alt: 'Global API network connections',
-    label: 'HTTP Integration',
-    sublabel: 'OAuth, Bearer, API Keys',
+    image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1400&q=90',
+    icon: Globe,
     color: '#22D3EE',
-    tag: 'REST & GraphQL',
+    bgColor: 'rgba(34, 211, 238, 0.1)',
+    label: 'Universal HTTP Integration',
+    description: 'Connect any REST or GraphQL API. Interpolate {{context}} variables, handle OAuth, and transform responses in real time.',
+    tag: 'API Connectivity',
+    accent: '#0E7490',
   },
   {
-    src: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=90',
-    alt: 'Real-time webhook triggers',
-    label: 'Instant Webhooks',
-    sublabel: '<50ms trigger time',
+    image: 'https://images.unsplash.com/photo-1557672172-298e0bd1b53d?w=1400&q=90',
+    icon: Webhook,
     color: '#F59E0B',
+    bgColor: 'rgba(245, 158, 11, 0.1)',
+    label: 'Instant Webhook Triggers',
+    description: 'Every workflow gets a live webhook URL. Trigger from Slack, Stripe, GitHub, or any service in under 50ms.',
     tag: 'Event-Driven',
+    accent: '#B45309',
   },
   {
-    src: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=90',
-    alt: 'Real-time observability dashboard',
-    label: 'Live Observability',
-    sublabel: '100% execution tracing',
+    image: 'https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?w=1400&q=90',
+    icon: Activity,
     color: '#10B981',
+    bgColor: 'rgba(16, 185, 129, 0.1)',
+    label: 'Real-time Observability',
+    description: 'Watch every node execute step-by-step. See inputs, outputs, and errors as they happen. 100% execution tracing.',
     tag: 'Debug & Monitor',
+    accent: '#047857',
   },
 ]
 
-function FeatureImage({ image, index }: { image: typeof FEATURE_IMAGES[0]; index: number }) {
+function FeatureCard({ feature, index }: { feature: typeof FEATURES[0]; index: number }) {
   const cardRef = useRef<HTMLDivElement>(null)
-  const imgRef = useRef<HTMLDivElement>(null)
+  const imageWrapRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
 
   useGSAP(() => {
     if (!cardRef.current) return
 
-    // Entry animation: slide up + fade in with stagger
-    gsap.from(cardRef.current, {
-      y: 80,
-      opacity: 0,
-      duration: 1,
-      ease: 'power3.out',
+    const tl = gsap.timeline({
       scrollTrigger: {
         trigger: cardRef.current,
-        start: 'top 85%',
+        start: 'top 80%',
+        toggleActions: 'play none none reverse',
       },
     })
 
-    // Parallax: image moves slower than card (depth effect)
-    gsap.to(imgRef.current, {
-      y: -40,
+    // Image parallax — moves slower than card
+    tl.from(imageWrapRef.current, {
+      y: 60,
+      duration: 1.2,
+      ease: 'power3.out',
+    }, 0)
+
+    // Content slides in from right
+    .from(contentRef.current, {
+      x: 60,
+      opacity: 0,
+      duration: 0.9,
+      ease: 'power3.out',
+    }, 0.2)
+
+    // Subtle scale on card
+    .fromTo(cardRef.current,
+      { scale: 0.97 },
+      {
+        scale: 1,
+        duration: 0.8,
+        ease: 'power2.out',
+      }, 0)
+
+    // Scroll-driven parallax continue
+    gsap.to(imageWrapRef.current, {
+      y: -80,
       ease: 'none',
       scrollTrigger: {
         trigger: cardRef.current,
@@ -74,148 +104,175 @@ function FeatureImage({ image, index }: { image: typeof FEATURE_IMAGES[0]; index
         scrub: 1.5,
       },
     })
-
-    // Subtle scale-up on scroll into view
-    gsap.fromTo(cardRef.current,
-      { scale: 0.95 },
-      {
-        scale: 1,
-        duration: 0.8,
-        ease: 'power2.out',
-        scrollTrigger: {
-          trigger: cardRef.current,
-          start: 'top 90%',
-        },
-      }
-    )
   })
+
+  const Icon = feature.icon
 
   return (
     <div
       ref={cardRef}
-      className="relative flex-shrink-0 w-[360px] h-[480px] rounded-3xl overflow-hidden group cursor-pointer"
-      style={{ scrollSnapAlign: 'center' }}
+      className="relative w-full h-[85vh] flex items-center overflow-hidden"
+      style={{ scrollSnapAlign: 'start' }}
     >
-      {/* Image with parallax wrapper */}
-      <div ref={imgRef} className="absolute inset-0">
+      {/* Full-bleed background image */}
+      <div ref={imageWrapRef} className="absolute inset-0">
         <Image
-          src={image.src}
-          alt={image.alt}
+          src={feature.image}
+          alt={feature.label}
           fill
-          className="object-cover transition-transform duration-700 group-hover:scale-105"
-          sizes="360px"
-          priority={index < 2}
+          className="object-cover"
+          sizes="100vw"
+          priority={index === 0}
         />
       </div>
 
-      {/* Dark gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+      {/* Gradient overlays — left dark for text readability */}
+      <div className="absolute inset-0 bg-gradient-to-r from-[#070A12] 0%, from-[#070A12]/60% 40%, to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/60" />
 
-      {/* Color accent bar at top */}
-      <div
-        className="absolute top-0 left-0 right-0 h-1"
-        style={{ background: `linear-gradient(90deg, ${image.color}, transparent)` }}
-      />
-
-      {/* Tag pill */}
-      <div className="absolute top-5 left-5">
-        <span
-          className="text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full backdrop-blur-md"
-          style={{
-            background: `${image.color}20`,
-            color: image.color,
-            border: `1px solid ${image.color}40`,
-          }}
-        >
-          {image.tag}
-        </span>
-      </div>
-
-      {/* Bottom content */}
-      <div className="absolute bottom-0 left-0 right-0 p-6 space-y-3">
-        <div
-          className="w-10 h-10 rounded-2xl flex items-center justify-center backdrop-blur-md"
-          style={{ background: `${image.color}20`, border: `1px solid ${image.color}40` }}
-        >
-          <div className="w-3 h-3 rounded-full" style={{ background: image.color }} />
+      {/* Content */}
+      <div ref={contentRef} className="relative z-10 max-w-2xl ml-[8vw] space-y-8">
+        {/* Icon + tag */}
+        <div className="flex items-center gap-4">
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center backdrop-blur-md"
+            style={{
+              background: feature.bgColor,
+              border: `1px solid ${feature.color}40`,
+              boxShadow: `0 0 40px ${feature.color}20`,
+            }}
+          >
+            <Icon className="w-8 h-8" style={{ color: feature.color }} />
+          </div>
+          <span
+            className="text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full backdrop-blur-md"
+            style={{
+              background: `${feature.color}15`,
+              color: feature.color,
+              border: `1px solid ${feature.color}30`,
+            }}
+          >
+            {feature.tag}
+          </span>
         </div>
 
-        <h3 className="text-2xl font-bold text-white">{image.label}</h3>
-        <p className="text-slate-400 text-sm">{image.sublabel}</p>
+        {/* Heading */}
+        <h2 className="text-6xl font-bold text-white leading-[1.1]">
+          {feature.label.split(' ').map((word, i) => (
+            <span
+              key={i}
+              className={i === feature.label.split(' ').length - 1 ? 'text-transparent' : 'text-white'}
+              style={i === feature.label.split(' ').length - 1 ? {
+                backgroundImage: `linear-gradient(135deg, ${feature.color}, ${FEATURES[(index + 1) % FEATURES.length].color})`,
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              } : {}}
+            >
+              {word}{' '}
+            </span>
+          ))}
+        </h2>
 
-        {/* Animated border line */}
-        <div className="h-px w-0 group-hover:w-full transition-all duration-500 ease-out" style={{ background: `linear-gradient(90deg, ${image.color}, transparent)` }} />
+        {/* Description */}
+        <p className="text-xl text-slate-300 leading-relaxed max-w-lg">
+          {feature.description}
+        </p>
+
+        {/* Metrics bar */}
+        <div className="flex items-center gap-6 pt-4">
+          <div
+            className="px-6 py-3 rounded-2xl backdrop-blur-md"
+            style={{
+              background: `${feature.color}10`,
+              border: `1px solid ${feature.color}25`,
+            }}
+          >
+            <span className="text-2xl font-bold" style={{ color: feature.color }}>
+              {index === 0 ? '340ms' : index === 1 ? 'OAuth 2.0' : index === 2 ? '<50ms' : '100%'}
+            </span>
+            <span className="text-slate-400 text-sm ml-2">
+              {index === 0 ? 'avg latency' : index === 1 ? 'supported' : index === 2 ? 'trigger time' : 'trace coverage'}
+            </span>
+          </div>
+        </div>
+
+        {/* Decorative accent line */}
+        <div
+          className="h-1 w-32 rounded-full"
+          style={{
+            background: `linear-gradient(90deg, ${feature.color}, transparent)`,
+            boxShadow: `0 0 20px ${feature.color}50`,
+          }}
+        />
       </div>
 
-      {/* Corner glow on hover */}
+      {/* Right side — abstract glow matching feature color */}
       <div
-        className="absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl opacity-0 group-hover:opacity-30 transition-opacity duration-500"
-        style={{ background: image.color }}
+        className="absolute right-[10vw] top-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full blur-[150px] opacity-20"
+        style={{ background: feature.color }}
       />
+
+      {/* Node number */}
+      <div className="absolute bottom-12 right-12">
+        <span
+          className="text-[120px] font-black leading-none select-none"
+          style={{
+            color: feature.color,
+            opacity: 0.08,
+            WebkitTextStroke: `1px ${feature.color}30`,
+          }}
+        >
+          {String(index + 1).padStart(2, '0')}
+        </span>
+      </div>
     </div>
   )
 }
 
 export default function FeatureShowcase() {
-  const containerRef = useRef<HTMLDivElement>(null)
+  const sectionRef = useRef<HTMLDivElement>(null)
 
   useGSAP(() => {
-    // Horizontal scroll effect
-    const container = containerRef.current
-    if (!container) return
-
-    const cards = container.querySelectorAll('.feature-card-scroll')
-    if (cards.length === 0) return
-
-    const totalScroll = container.scrollWidth - window.innerWidth + 200
-
-    gsap.to(cards, {
-      x: -totalScroll,
-      ease: 'none',
+    // Section header animation
+    gsap.from('.feature-header', {
+      y: 40,
+      opacity: 0,
+      duration: 0.8,
+      stagger: 0.15,
+      ease: 'power3.out',
       scrollTrigger: {
-        trigger: container,
-        start: 'top top',
-        end: () => `+=${totalScroll}`,
-        scrub: 1.2,
-        pin: true,
-        anticipatePin: 1,
-        invalidateOnRefresh: true,
+        trigger: sectionRef.current,
+        start: 'top 80%',
       },
     })
   })
 
   return (
-    <div
-      ref={containerRef}
-      className="relative h-screen flex items-center overflow-hidden bg-[#070A12]"
-    >
-      {/* Section label */}
-      <div className="absolute top-12 left-1/2 -translate-x-1/2 z-20 text-center">
-        <span className="text-indigo-400 text-sm font-medium tracking-widest uppercase px-4 py-1.5 rounded-full border border-indigo-500/20 bg-indigo-500/5">
-          How Flowforge Works
+    <section ref={sectionRef} className="relative bg-[#070A12]">
+      {/* Section header */}
+      <div className="feature-header text-center py-24 px-6 space-y-4">
+        <span className="inline-block text-indigo-400 text-sm font-medium tracking-widest uppercase px-4 py-1.5 rounded-full border border-indigo-500/20 bg-indigo-500/5">
+          Core Capabilities
         </span>
-        <h2 className="text-5xl font-bold text-white mt-6 max-w-xl">
-          Four pillars. Infinite possibilities.
+        <h2 className="text-5xl font-bold text-white">
+          Everything you need to build{' '}
+          <span className="bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
+            AI automations
+          </span>
         </h2>
+        <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+          Four powerful primitives. Infinite combinations. Build any workflow in minutes.
+        </p>
       </div>
 
-      {/* Scrollable feature cards */}
-      <div className="flex items-center gap-6 pl-[15vw] pr-[15vw] feature-card-scroll">
-        {FEATURE_IMAGES.map((image, i) => (
-          <FeatureImage key={i} image={image} index={i} />
+      {/* Vertical scroll feature cards */}
+      <div>
+        {FEATURES.map((feature, i) => (
+          <FeatureCard key={i} feature={feature} index={i} />
         ))}
       </div>
-
-      {/* Scroll hint */}
-      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-3 text-slate-500 text-sm">
-        <div className="w-12 h-px bg-gradient-to-r from-transparent to-slate-600" />
-        <span>Scroll to explore</span>
-        <div className="w-12 h-px bg-gradient-to-l from-transparent to-slate-600" />
-      </div>
-
-      {/* Side gradients for fade effect */}
-      <div className="absolute inset-y-0 left-0 w-64 bg-gradient-to-r from-[#070A12] to-transparent pointer-events-none z-10" />
-      <div className="absolute inset-y-0 right-0 w-64 bg-gradient-to-l from-[#070A12] to-transparent pointer-events-none z-10" />
-    </div>
+    </section>
   )
 }
