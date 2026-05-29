@@ -2,10 +2,10 @@
 
 import { useRef } from 'react'
 import dynamic from 'next/dynamic'
-import { ChevronDown } from 'lucide-react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useGSAP } from '@gsap/react'
+import { Zap, Globe, Webhook, Activity } from 'lucide-react'
 
 gsap.registerPlugin(ScrollTrigger, useGSAP)
 
@@ -29,6 +29,42 @@ const STATUS_LABELS: Record<string, string> = {
   http: 'POST api.slack.com',
 }
 
+// 4 core feature cards for scrollable section
+const CORE_FEATURES = [
+  {
+    icon: Zap,
+    color: '#A78BFA',
+    bg: '#2E1065',
+    title: 'LLM-Powered Decisions',
+    description: 'Groq-powered LLM nodes classify, summarize, and route data instantly. No ML expertise required.',
+    metric: '340ms avg latency',
+  },
+  {
+    icon: Globe,
+    color: '#22D3EE',
+    bg: '#083344',
+    title: 'HTTP & API Integration',
+    description: 'Connect any REST API. Interpolate {{context}} variables, handle auth, and transform responses.',
+    metric: 'OAuth, Bearer, API Keys',
+  },
+  {
+    icon: Webhook,
+    color: '#F59E0B',
+    bg: '#451a03',
+    title: 'Instant Webhooks',
+    description: 'Every workflow gets a live webhook URL. Trigger from any service — Slack, Stripe, GitHub.',
+    metric: '<50ms trigger time',
+  },
+  {
+    icon: Activity,
+    color: '#10B981',
+    bg: '#022c22',
+    title: 'Real-time Observability',
+    description: 'Watch every node execute step-by-step. See inputs, outputs, and errors as they happen.',
+    metric: '100% execution tracing',
+  },
+]
+
 export default function Hero() {
   const sectionRef = useRef<HTMLElement>(null)
   const headlineRef = useRef<HTMLHeadingElement>(null)
@@ -36,11 +72,12 @@ export default function Hero() {
   const ctasRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
   const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map())
+  const featuresRef = useRef<HTMLDivElement>(null)
 
   useGSAP(() => {
+    // Entrance animation
     const tl = gsap.timeline()
 
-    // Entrance animation
     tl.from(headlineRef.current, {
       y: 60,
       opacity: 0,
@@ -60,10 +97,9 @@ export default function Hero() {
       ease: 'power3.out',
     }, '-=0.4')
 
-    // Scroll-driven canvas animation
+    // Node firing sequence - 2s each
     const canvasTl = gsap.timeline()
 
-    // Node firing sequence - 2s each
     NODES.forEach((node, i) => {
       const el = nodeRefs.current.get(node.id)
       if (!el) return
@@ -96,37 +132,42 @@ export default function Hero() {
     // 10s loop
     canvasTl.repeat(-1)
 
-    // Parallax on scroll
+    // Subtle parallax on scroll - keep text visible
     gsap.to(canvasRef.current, {
-      y: -80,
+      y: -50,
       ease: 'none',
       scrollTrigger: {
         trigger: sectionRef.current,
         start: 'top top',
         end: 'bottom top',
-        scrub: 1.5,
+        scrub: 2,
       },
     })
 
-    gsap.to(headlineRef.current, {
-      y: -40,
-      opacity: 0.3,
-      ease: 'none',
-      scrollTrigger: {
-        trigger: sectionRef.current,
-        start: 'top top',
-        end: 'center top',
-        scrub: 1,
-      },
-    })
+    // Horizontal scroll for features
+    const featureCards = featuresRef.current?.querySelectorAll('.feature-card')
+    if (featureCards && featureCards.length > 0) {
+      gsap.to(featureCards, {
+        x: -(featuresRef.current!.scrollWidth - window.innerWidth + 100),
+        ease: 'none',
+        scrollTrigger: {
+          trigger: featuresRef.current,
+          start: 'top top',
+          end: () => `+=${featuresRef.current!.scrollWidth}`,
+          scrub: 1,
+          pin: true,
+          anticipatePin: 1,
+        },
+      })
+    }
 
     return () => {
       ScrollTrigger.getAll().forEach(t => t.kill())
     }
-  })
+  }, [])
 
   return (
-    <section ref={sectionRef} className="relative min-h-screen overflow-hidden">
+    <section ref={sectionRef} className="relative overflow-hidden">
       {/* Layered animated backgrounds */}
       <AuroraBackground />
       <ParticleField />
@@ -139,7 +180,7 @@ export default function Hero() {
       {/* Radial glow */}
       <div className="absolute inset-0 radial-glow pointer-events-none z-10" />
 
-      {/* Content */}
+      {/* Hero Content */}
       <div className="relative z-20 max-w-7xl mx-auto px-6 py-32 grid grid-cols-2 gap-16 items-center min-h-screen">
         {/* Left: Copy */}
         <div className="space-y-8">
@@ -194,6 +235,27 @@ export default function Hero() {
               </div>
             ))}
           </div>
+
+          {/* 4 core features inline */}
+          <div className="grid grid-cols-2 gap-4 pt-4">
+            {CORE_FEATURES.map((feature) => {
+              const Icon = feature.icon
+              return (
+                <div key={feature.title} className="flex items-start gap-3">
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: feature.bg, color: feature.color }}
+                  >
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-white text-sm font-semibold">{feature.title}</div>
+                    <div className="text-slate-500 text-xs mt-0.5">{feature.metric}</div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
 
         {/* Right: Animated workflow canvas */}
@@ -232,15 +294,6 @@ export default function Hero() {
                 </filter>
               </defs>
 
-              {/* Edge: Webhook → LLM */}
-              <path
-                d="M 160 140 C 160 240, 320 240, 320 220"
-                fill="none"
-                stroke="url(#grad-violet)"
-                strokeWidth="2"
-                filter="url(#glow-edge)"
-                className="animate-pulse"
-              />
               <defs>
                 <linearGradient id="grad-violet" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" stopColor="#475569" />
@@ -255,6 +308,16 @@ export default function Hero() {
                   <stop offset="100%" stopColor="#22D3EE" />
                 </linearGradient>
               </defs>
+
+              {/* Edge: Webhook → LLM */}
+              <path
+                d="M 160 140 C 160 240, 320 240, 320 220"
+                fill="none"
+                stroke="url(#grad-violet)"
+                strokeWidth="2"
+                filter="url(#glow-edge)"
+                className="animate-pulse"
+              />
 
               {/* Edge: LLM → Condition */}
               <path
@@ -334,12 +397,6 @@ export default function Hero() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-20">
-        <span className="text-slate-500 text-xs tracking-widest uppercase">Scroll to explore</span>
-        <ChevronDown className="w-5 h-5 text-slate-400 animate-bounce" />
       </div>
     </section>
   )
